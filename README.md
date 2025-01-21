@@ -1,0 +1,22 @@
+# Assignment 2 三角形光栅化和Z-buffering
+## 环境
+wsl2
+## 编译
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
+## 运行
+```bash
+./Rasterizer
+```
+## 学习笔记
+- OpenGL使用 **右手坐标系**，而OpenCV使用 **左手坐标系**，在渲染过程中要注意两者之间的关系
+- 在main.cpp中可以看到，先 **设置投影矩阵**，再进行 **三角形光栅化**，而在光栅化的过程中，都会先将OpenGL的坐标转为OpenCV的坐标，再进行处理
+- 所以，应该将投影矩阵设置为 **左手坐标系**，将OpenGL坐标转换为OpenCV坐标
+- 因为给出的代码框架已经将z值 **反转**，所以在使用Z-Buffer算法时，不需要自己再对z值求负数
+- `insideTriangle` 的判断方法可以用给出的 `computeBarycentric2D` 函数，也可以用 **向量叉积法**
+    - 我们只关心二维平面的三角形，而不关心其 $z$ 坐标，所以第三个 $z$ 维度的正负可以用来判断叉乘后向量的方向
+- 在 `rasterize_triangle` 函数中，$(x + 0.5, y + 0.5)$ 是为了保证处理的是 **像素点的中心**
