@@ -140,10 +140,23 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     x_max = (int)std::ceil(x_max);
     y_max = (int)std::ceil(y_max);
 
+    // 4x MSAA
+    Eigen::Vector2f pos[4] = {
+        { 0.25, 0.25 },
+        { 0.75, 0.25 },
+        { 0.25, 0.75 },
+        { 0.75, 0.75 }
+    };
+
     for (float y = y_min; y <= y_max; ++y)
         for (float x = x_min; x <= x_max; ++x)
         {
-            if (insideTriangle(x + 0.5, y + 0.5, t.v))
+            int cnt = 0;
+            for (int i = 0; i < 4; ++i)
+                if (insideTriangle(x + pos[i][0], y + pos[i][1], t.v))
+                    ++cnt;
+
+            if (cnt)
             {
                 auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
                 float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
@@ -152,7 +165,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
 
                 if (z_interpolated < depth_buf[get_index(x, y)])
                 {
-                    set_pixel(Eigen::Vector3f(x, y, z_interpolated), t.getColor());
+                    set_pixel(Eigen::Vector3f(x, y, z_interpolated), t.getColor() * cnt / 4);
                     depth_buf[get_index(x, y)] = z_interpolated;
                 }
             }
