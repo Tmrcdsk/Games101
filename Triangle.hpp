@@ -89,7 +89,7 @@ public:
 class MeshTriangle : public Object
 {
 public:
-    MeshTriangle(const std::string& filename, Material *mt = new Material())
+    MeshTriangle(const std::string& filename, Material *mt = new Material(), Vector3f Trans = Vector3f(0.0f), Vector3f Scale = Vector3f(1.0f))
     {
         objl::Loader loader;
         loader.LoadFile(filename);
@@ -111,6 +111,7 @@ public:
                 auto vert = Vector3f(mesh.Vertices[i + j].Position.X,
                                      mesh.Vertices[i + j].Position.Y,
                                      mesh.Vertices[i + j].Position.Z);
+                vert = Scale * vert + Trans;
                 face_vertices[j] = vert;
 
                 min_vert = Vector3f(std::min(min_vert.x, vert.x),

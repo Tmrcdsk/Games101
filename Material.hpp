@@ -7,7 +7,7 @@
 
 #include "Vector.hpp"
 
-enum MaterialType { DIFFUSE};
+enum MaterialType { DIFFUSE, MICROFACET };
 
 class Material{
 private:
@@ -71,6 +71,39 @@ private:
         // kt = 1 - kr;
     }
 
+    // Normal distribution function (Trowbridge-Reitz GGX)
+    //
+    // \param N is the normal at the intersection point
+    // \param h is the halfway vector
+    // \param a is the surface's roughness
+    float DistributionGGX(const Vector3f& N, const Vector3f& h, float a) {
+        float aa = a * a;
+        float NdotH = std::max(0.0f, dotProduct(N, h));
+        float NdotH2 = NdotH * NdotH;
+
+        float nominator = aa;
+        float denominator = NdotH2 * (aa - 1.0f) + 1.0f;
+        denominator = M_PI * denominator * denominator;
+
+        return nominator / denominator;
+    }
+
+    float GeometrySchlickGGX(float NdotV, float k) {
+        float nominator = NdotV;
+        float denominator = NdotV * (1.0f - k) + k;
+        return nominator / denominator;
+    }
+
+    float GeometrySmith(const Vector3f& N, const Vector3f& V, const Vector3f& L, float a) {
+        float k = (a + 1) * (a + 1) / 8.0f;
+        float NdotV = dotProduct(N, V);
+        float NdotL = dotProduct(N, L);
+        float ggx1 = GeometrySchlickGGX(NdotV, k);
+        float ggx2 = GeometrySchlickGGX(NdotL, k);
+        
+        return ggx1 * ggx2;
+    }
+
     Vector3f toWorld(const Vector3f &a, const Vector3f &N){
         Vector3f B, C;
         if (std::fabs(N.x) > std::fabs(N.y)){
@@ -132,6 +165,7 @@ Vector3f Material::getColorAt(double u, double v) {
 Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
     switch(m_type){
         case DIFFUSE:
+        case MICROFACET:
         {
             // uniform sample on the hemisphere
             float x_1 = get_random_float(), x_2 = get_random_float();
@@ -148,6 +182,7 @@ Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
 float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
     switch(m_type){
         case DIFFUSE:
+        case MICROFACET:
         {
             // uniform sample probability 1 / (2 * PI)
             if (dotProduct(wo, N) > 0.0f)
@@ -168,6 +203,43 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
             if (cosalpha > 0.0f) {
                 Vector3f diffuse = Kd / M_PI;
                 return diffuse;
+            }
+            else
+                return Vector3f(0.0f);
+            break;
+        }
+        case MICROFACET:
+        {
+            // calculate the contribution of microfacet   model
+            float cosalpha = dotProduct(N, wo);
+            if (cosalpha > 0.0f) {
+                float a = 0.4f; // roughness
+
+                Vector3f V = wi;
+                Vector3f L = wo;
+                Vector3f H = (V + L).normalized();
+
+                float D = DistributionGGX(N, H, a);
+                float G = GeometrySmith(N, V, L, a);
+
+                float F;
+                float etat = 1.85f;
+                fresnel(wi, N, etat, F);
+
+                float nominator = D * G * F;
+                float denominator = 4 * std::max(0.0f, dotProduct(N, wi))
+ * std::max(0.0f, dotProduct(N, wo));
+
+                Vector3f specular = nominator / std::max(0.001f, denominator);
+
+                float ks_ = F; // 反射比率
+                float kd_ = 1 - ks_; // 折射比率
+
+                Vector3f diffuse = Kd / M_PI;
+
+                // 因为在 specular 项里已经考虑了反射部分的比例：F。所以反射部分不需要再乘以 ks_ ，而 diffuse 项里也已经考虑了 Kd 部分，所以只需要再乘上 kd_
+                // Ks为镜面反射项，Kd为漫反射项。
+                return Ks * specular + kd_ * diffuse;
             }
             else
                 return Vector3f(0.0f);
