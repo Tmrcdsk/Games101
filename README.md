@@ -48,7 +48,7 @@ make
 - 路径追踪图示</br>
 ![PathTracing](images/PathTracing.png)
 - 使用 `std::thread` 和 `std::mutex` 来实现多线程（[C++11 多线程（std::thread）详解](https://blog.csdn.net/sjc_0910/article/details/118861539)），自己写的多线程例子 [examples](Ref/Multi-thread.md)
-- Microfacet的实现参考文章 [LearnOpenGL - Theory](https://learnopengl.com/PBR/Theory#:~:text=Normal%20distribution%20function%3A%20approximates,at%20different%20surface%20angles.)
+- Microfacet的实现参考文章 （[LearnOpenGL - Theory](https://learnopengl.com/PBR/Theory#:~:text=Normal%20distribution%20function%3A%20approximates,at%20different%20surface%20angles.)）（[GAMES101-Lecture 16 Ray Tracing 4(Monte Carlo Path Tracing) & 作业7](https://call1ce.github.io/posts/GAMES101-Lecture-16-Ray-Tracing-4-&-%E4%BD%9C%E4%B8%9A7/)）
     - 在 [Sphere.hpp](Sphere.hpp) 中，记得改一下光线与球相交的条件，避免因为浮点数精度问题出现黑点 (下图为 SPP = 4 的渲染图)
     ![SPP=4](images/binary_bad.png)
     - 记得在 [main.cpp](main.cpp) 中添加两个球体
